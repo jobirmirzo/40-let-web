@@ -1,0 +1,159 @@
+/* Admin page — reuses tokens from index.css and some classes from App.css */
+
+.admin {
+  /* No bottom navbar here, so less bottom padding is needed. */
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+
+.loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+
+/* Add-food form */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  margin-bottom: 24px;
+}
+
+.image-picker {
+  align-self: center;
+  width: 120px;
+  height: 120px;
+  border: 2px dashed var(--accent-border);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--accent-bg);
+}
+.image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-placeholder {
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--accent);
+}
+
+.field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 15px;
+  font-family: inherit;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.field-row {
+  display: flex;
+  gap: 10px;
+}
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-error {
+  color: #e5484d;
+  font-size: 13px;
+  margin: 0;
+}
+
+.admin-add-btn {
+  width: 100%;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.admin-add-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Item list */
+.admin-list-title {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.admin-row.is-inactive {
+  opacity: 0.55;
+}
+.admin-row-body {
+  flex: 1;
+  min-width: 0;
+}
+.admin-row-meta {
+  font-size: 13px;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+/* Active/inactive switch */
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border: none;
+  border-radius: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.18s ease;
+}
+.switch.on {
+  background: var(--accent);
+}
+.switch.off {
+  background: var(--border);
+}
+.switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.18s ease;
+}
+.switch.on .switch-knob {
+  transform: translateX(20px);
+}
