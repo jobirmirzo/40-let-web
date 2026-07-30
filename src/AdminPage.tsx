@@ -1,89 +1,234 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CATEGORIES } from './menu'
-import type { Category, MenuItem } from './types'
-import { createFood, fetchFoods, setFoodActive } from './api'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CATEGORIES,
+  STATUS_EMOJI,
+  STATUS_LABELS,
+  categoryEmoji,
+  categoryLabel,
+  effectivePrice,
+  formatPrice,
+  nextStatus,
+} from './menu'
+import { Category, Status } from './types'
+import type { Food, Order } from './types'
+import {
+  createFood,
+  deleteFood,
+  deleteOrder,
+  fetchFoods,
+  fetchOrders,
+  signOut,
+  updateFood,
+  updateOrderStatus,
+} from './api'
 import { useTheme } from './useTheme'
 import './App.css'
 import './Admin.css'
 
-const categoryLabel = (c: Category) =>
-  CATEGORIES.find((x) => x.id === c)?.label ?? c
+type AdminTab = 'menu' | 'orders'
+
+/** Empty form state, also used to reset after a save. */
+const blankForm = {
+  name: '',
+  price: '',
+  category: Category.Food as Category,
+  discount: '',
+  hasDiscount: false,
+}
 
 export default function AdminPage() {
   const [theme, toggleTheme] = useTheme()
-  const [foods, setFoods] = useState<MenuItem[]>([])
+  const [tab, setTab] = useState<AdminTab>('menu')
 
-  // New-food form fields
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
-  const [category, setCategory] = useState<Category>('food')
-  const [description, setDescription] = useState('')
-  const [image, setImage] = useState<string | undefined>(undefined)
+  const [foods, setFoods] = useState<Food[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loadError, setLoadError] = useState('')
+  const [orderError, setOrderError] = useState('')
+
+  // Form state. `editing` is the id being updated, or null when creating.
+  const [editing, setEditing] = useState<number | null>(null)
+  const [form, setForm] = useState(blankForm)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchFoods().then(setFoods)
+  const loadFoods = useCallback(async () => {
+    try {
+      setFoods(await fetchFoods())
+      setLoadError('')
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Could not load foods')
+    }
   }, [])
 
+  const loadOrders = useCallback(async () => {
+    try {
+      const all = await fetchOrders()
+      setOrders([...all].sort((a, b) => b.id - a.id))
+    } catch {
+      // Menu management still works without the orders board.
+    }
+  }, [])
+
+  useEffect(() => {
+    loadFoods()
+    loadOrders()
+  }, [loadFoods, loadOrders])
+
+  // Poll the kitchen board so a second admin's changes show up.
+  useEffect(() => {
+    if (tab !== 'orders') return
+    const id = setInterval(loadOrders, 10000)
+    return () => clearInterval(id)
+  }, [tab, loadOrders])
+
   const canSubmit = useMemo(
-    () => name.trim() !== '' && Number(price) > 0 && !saving,
-    [name, price, saving],
+    () => form.name.trim() !== '' && Number(form.price) > 0 && !saving,
+    [form, saving],
   )
 
   function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setImageFile(file)
     const reader = new FileReader()
-    reader.onload = () => setImage(reader.result as string)
+    reader.onload = () => setImagePreview(reader.result as string)
     reader.readAsDataURL(file)
   }
 
   function resetForm() {
-    setName('')
-    setPrice('')
-    setCategory('food')
-    setDescription('')
-    setImage(undefined)
+    setEditing(null)
+    setForm(blankForm)
+    setImageFile(null)
+    setImagePreview(undefined)
+    setError('')
   }
 
-  async function onAdd(e: React.FormEvent) {
+  function startEdit(food: Food) {
+    setEditing(food.id)
+    setForm({
+      name: food.name ?? '',
+      price: String(food.price),
+      category: food.category,
+      discount: String(food.discount || ''),
+      hasDiscount: food.hasDiscount,
+    })
+    setImageFile(null)
+    setImagePreview(food.image ?? undefined)
+    setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
     setSaving(true)
     setError('')
+
+    const payload = {
+      name: form.name.trim(),
+      price: Number(form.price),
+      category: form.category,
+      discount: form.hasDiscount ? Number(form.discount) || 0 : 0,
+      hasDiscount: form.hasDiscount,
+      // Sending no file on update keeps the stored image (FoodService only
+      // replaces it when ImageFile is present).
+      imageFile,
+    }
+
     try {
-      const created = await createFood({
-        name: name.trim(),
-        price: Number(price),
-        category,
-        description: description.trim() || undefined,
-        image,
-      })
-      setFoods((list) => [created, ...list])
+      if (editing === null) await createFood(payload)
+      else await updateFood(editing, payload)
+      await loadFoods()
       resetForm()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add item')
+      setError(err instanceof Error ? err.message : 'Could not save the item')
     } finally {
       setSaving(false)
     }
   }
 
-  async function onToggleActive(item: MenuItem) {
-    const next = !item.active
-    // Optimistic update
+  async function onDelete(food: Food) {
+    if (!confirm(`Delete "${food.name ?? 'this item'}" from the menu?`)) return
+    const before = foods
+    setFoods((list) => list.filter((f) => f.id !== food.id))
+    try {
+      await deleteFood(food.id)
+      if (editing === food.id) resetForm()
+    } catch (err) {
+      setFoods(before)
+      setError(err instanceof Error ? err.message : 'Could not delete the item')
+    }
+  }
+
+  /** Toggling the discount switch writes straight through to the API. */
+  async function onToggleDiscount(food: Food) {
+    const next = !food.hasDiscount
+    const before = foods
     setFoods((list) =>
-      list.map((m) => (m.id === item.id ? { ...m, active: next } : m)),
+      list.map((f) => (f.id === food.id ? { ...f, hasDiscount: next } : f)),
     )
     try {
-      await setFoodActive(item.id, next)
+      await updateFood(food.id, {
+        name: food.name ?? '',
+        price: food.price,
+        category: food.category,
+        discount: food.discount,
+        hasDiscount: next,
+      })
     } catch {
-      // Revert on failure
-      setFoods((list) =>
-        list.map((m) => (m.id === item.id ? { ...m, active: !next } : m)),
+      setFoods(before)
+    }
+  }
+
+  async function onAdvance(order: Order) {
+    const next = nextStatus(order.status)
+    if (!next) return
+    const before = orders
+    setOrders((list) =>
+      list.map((o) => (o.id === order.id ? { ...o, status: next } : o)),
+    )
+    try {
+      await updateOrderStatus(order.id, next)
+    } catch {
+      setOrders(before)
+    }
+  }
+
+  async function onCancel(order: Order) {
+    if (!confirm(`Cancel order #${order.id}?`)) return
+    const before = orders
+    setOrders((list) =>
+      list.map((o) => (o.id === order.id ? { ...o, status: Status.Canceled } : o)),
+    )
+    try {
+      await updateOrderStatus(order.id, Status.Canceled)
+    } catch {
+      setOrders(before)
+    }
+  }
+
+  async function onDeleteOrder(order: Order) {
+    if (!confirm(`Delete order #${order.id}? This cannot be undone.`)) return
+    const before = orders
+    setOrders((list) => list.filter((o) => o.id !== order.id))
+    setOrderError('')
+    try {
+      await deleteOrder(order.id)
+    } catch {
+      setOrders(before)
+      // checks.order_id is ON DELETE RESTRICT, so any order with a receipt
+      // can't be removed. Say so rather than silently snapping back.
+      setOrderError(
+        `Order #${order.id} can't be deleted — it has a receipt attached. Cancel it instead.`,
       )
     }
   }
+
+  const openOrders = orders.filter(
+    (o) => o.status !== Status.Delivered && o.status !== Status.Canceled,
+  )
 
   return (
     <div className="app admin">
@@ -96,101 +241,273 @@ export default function AdminPage() {
         {theme === 'dark' ? '☀️' : '🌙'}
       </button>
 
+      <button
+        type="button"
+        className="logout-toggle"
+        onClick={signOut}
+        aria-label="Sign out"
+        title="Sign out"
+      >
+        ⎋
+      </button>
+
       <header className="app-header">
-        <h1>Menu Admin</h1>
-        <p>Add items and turn them on or off for customers</p>
+        <h1>{tab === 'menu' ? 'Menu Admin' : 'Kitchen'}</h1>
+        <p>
+          {tab === 'menu'
+            ? 'Add, edit and price the items customers can order'
+            : `${openOrders.length} order${openOrders.length === 1 ? '' : 's'} in progress`}
+        </p>
       </header>
 
-      {/* Add food */}
-      <form className="admin-form" onSubmit={onAdd}>
-        <label className="image-picker">
-          {image ? (
-            <img className="image-preview" src={image} alt="" />
-          ) : (
-            <span className="image-placeholder">📷<br />Add photo</span>
-          )}
-          <input type="file" accept="image/*" onChange={onPickImage} hidden />
-        </label>
-
-        <input
-          className="field"
-          type="text"
-          placeholder="Item name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <div className="field-row">
-          <input
-            className="field"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-          <select
-            className="field"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as Category)}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <input
-          className="field"
-          type="text"
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-
-        {error && <p className="admin-error">{error}</p>}
-
-        <button type="submit" className="admin-add-btn" disabled={!canSubmit}>
-          {saving ? 'Adding…' : 'Add item'}
+      <nav className="tabs">
+        <button
+          type="button"
+          className={`tab ${tab === 'menu' ? 'is-active' : ''}`}
+          onClick={() => setTab('menu')}
+        >
+          <span className="tab-emoji">🍽️</span>
+          Menu
         </button>
-      </form>
+        <button
+          type="button"
+          className={`tab ${tab === 'orders' ? 'is-active' : ''}`}
+          onClick={() => setTab('orders')}
+        >
+          <span className="tab-emoji">📋</span>
+          Orders
+          {openOrders.length > 0 && <span className="tab-count">{openOrders.length}</span>}
+        </button>
+      </nav>
 
-      {/* Existing items */}
-      <h2 className="admin-list-title">Items ({foods.length})</h2>
-      <div className="admin-list">
-        {foods.map((item) => (
-          <div
-            key={item.id}
-            className={`admin-row ${item.active ? '' : 'is-inactive'}`}
-          >
-            {item.image ? (
-              <img className="card-img" src={item.image} alt="" />
-            ) : (
-              <div className="card-emoji">{item.emoji}</div>
-            )}
-            <div className="admin-row-body">
-              <div className="card-name">{item.name}</div>
-              <div className="admin-row-meta">
-                {categoryLabel(item.category)} · ${item.price.toFixed(2)}
-              </div>
+      {tab === 'menu' && (
+        <>
+          <form className="admin-form" onSubmit={onSubmit}>
+            <div className="admin-form-title">
+              {editing === null ? 'New item' : `Editing item #${editing}`}
             </div>
 
-            <button
-              type="button"
-              className={`switch ${item.active ? 'on' : 'off'}`}
-              role="switch"
-              aria-checked={item.active}
-              aria-label={item.active ? 'Deactivate' : 'Activate'}
-              onClick={() => onToggleActive(item)}
-            >
-              <span className="switch-knob" />
-            </button>
+            <label className="image-picker">
+              {imagePreview ? (
+                <img className="image-preview" src={imagePreview} alt="" />
+              ) : (
+                <span className="image-placeholder">
+                  📷
+                  <br />
+                  Add photo
+                </span>
+              )}
+              <input type="file" accept="image/*" onChange={onPickImage} hidden />
+            </label>
+
+            <input
+              className="field"
+              type="text"
+              placeholder="Item name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+
+            <div className="field-row">
+              <input
+                className="field"
+                type="number"
+                min="0"
+                step="any"
+                placeholder="Price (so'm)"
+                value={form.price}
+                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+              />
+              <select
+                className="field"
+                value={form.category}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, category: Number(e.target.value) as Category }))
+                }
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field-row">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={form.hasDiscount}
+                  onChange={(e) => setForm((f) => ({ ...f, hasDiscount: e.target.checked }))}
+                />
+                On sale
+              </label>
+              <input
+                className="field"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                placeholder="Discount %"
+                disabled={!form.hasDiscount}
+                value={form.discount}
+                onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+              />
+            </div>
+
+            {error && <p className="admin-error">{error}</p>}
+
+            <div className="field-row">
+              <button type="submit" className="admin-add-btn" disabled={!canSubmit}>
+                {saving ? 'Saving…' : editing === null ? 'Add item' : 'Save changes'}
+              </button>
+              {editing !== null && (
+                <button type="button" className="admin-ghost-btn" onClick={resetForm}>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+
+          <h2 className="admin-list-title">Items ({foods.length})</h2>
+
+          {loadError && (
+            <div className="state-msg state-msg--error">
+              <p>{loadError}</p>
+              <button type="button" className="retry-btn" onClick={loadFoods}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          <div className="admin-list">
+            {foods.map((food) => (
+              <div
+                key={food.id}
+                className={`admin-row ${food.hasDiscount ? '' : 'is-plain'}`}
+              >
+                {food.image ? (
+                  <img className="card-img" src={food.image} alt="" />
+                ) : (
+                  <div className="card-emoji">{categoryEmoji(food.category)}</div>
+                )}
+                <div className="admin-row-body">
+                  <div className="card-name">{food.name ?? 'Unnamed item'}</div>
+                  <div className="admin-row-meta">
+                    {categoryLabel(food.category)} · {formatPrice(effectivePrice(food))}
+                    {food.hasDiscount && food.discount > 0 && (
+                      <span className="badge-discount">−{food.discount}%</span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={`switch ${food.hasDiscount ? 'on' : 'off'}`}
+                  role="switch"
+                  aria-checked={food.hasDiscount}
+                  aria-label={food.hasDiscount ? 'Turn discount off' : 'Turn discount on'}
+                  onClick={() => onToggleDiscount(food)}
+                >
+                  <span className="switch-knob" />
+                </button>
+
+                <div className="admin-row-actions">
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label="Edit"
+                    onClick={() => startEdit(food)}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn danger"
+                    aria-label="Delete"
+                    onClick={() => onDelete(food)}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {tab === 'orders' && (
+        <div className="orders">
+          {orderError && <p className="admin-error">{orderError}</p>}
+          {orders.length === 0 && <p className="state-msg">No orders yet.</p>}
+
+          {orders.map((order) => {
+            const next = nextStatus(order.status)
+            const closed =
+              order.status === Status.Delivered || order.status === Status.Canceled
+
+            return (
+              <article key={order.id} className={`order-card ${closed ? 'is-closed' : ''}`}>
+                <div className="order-head">
+                  <span className="order-id">Order #{order.id}</span>
+                  <span className={`status-pill status-${order.status}`}>
+                    {STATUS_EMOJI[order.status]} {STATUS_LABELS[order.status]}
+                  </span>
+                </div>
+
+                <div className="order-lines">
+                  {order.items.map((item) => {
+                    const food = foods.find((f) => f.id === item.foodId)
+                    return (
+                      <div key={item.id} className="order-line">
+                        <span>
+                          {item.quantity}× {food?.name ?? `Item ${item.foodId}`}
+                        </span>
+                        <span>{formatPrice(item.totalPrice)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="order-foot">
+                  <span>{new Date(order.createdAt).toLocaleString()}</span>
+                  <strong>{formatPrice(order.totalPrice)}</strong>
+                </div>
+
+                <div className="order-actions">
+                  {next && (
+                    <button
+                      type="button"
+                      className="admin-add-btn"
+                      onClick={() => onAdvance(order)}
+                    >
+                      {STATUS_EMOJI[next]} Mark {STATUS_LABELS[next].toLowerCase()}
+                    </button>
+                  )}
+                  {!closed && (
+                    <button
+                      type="button"
+                      className="admin-ghost-btn"
+                      onClick={() => onCancel(order)}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  {closed && (
+                    <button
+                      type="button"
+                      className="admin-ghost-btn danger"
+                      onClick={() => onDeleteOrder(order)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

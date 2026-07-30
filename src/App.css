@@ -418,3 +418,186 @@
 .profile-row + .profile-row {
   border-top: 1px solid var(--border);
 }
+
+/* Sign out — full width under the profile rows */
+.logout-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: #e5484d;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Sign out — circular, sits to the left of the theme toggle */
+.logout-toggle {
+  position: absolute;
+  top: 14px;
+  right: 64px;
+  z-index: 12;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: #e5484d;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+/* Loading / empty / error states */
+.state-msg {
+  text-align: center;
+  color: var(--text);
+  font-size: 14px;
+  padding: 28px 12px;
+}
+.state-msg--error {
+  color: #e5484d;
+}
+.retry-btn {
+  margin-top: 12px;
+  padding: 9px 20px;
+  border: 1px solid var(--accent-border);
+  border-radius: 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Discounted prices */
+.card-price {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.card-price-was {
+  color: var(--text);
+  font-weight: 400;
+  text-decoration: line-through;
+  font-size: 13px;
+}
+.badge-discount {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.sheet-saved {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.sheet-saved + .sheet-total {
+  margin-top: 6px;
+}
+
+/* Order cards — customer history and the admin kitchen board */
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+.order-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 14px;
+}
+.order-card.is-closed {
+  opacity: 0.62;
+}
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.order-id {
+  font-weight: 700;
+  color: var(--text-h);
+  font-size: 15px;
+}
+.order-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.order-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+.order-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text);
+}
+.order-foot strong {
+  font-size: 16px;
+  color: var(--text-h);
+}
+.order-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Status pills — numbers match the Status enum in types.ts */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--code-bg);
+  color: var(--text-h);
+}
+.status-1 { background: rgba(120, 120, 120, 0.16); }
+.status-2,
+.status-5 { background: rgba(255, 122, 0, 0.16); color: #b35600; }
+.status-3 { background: rgba(229, 72, 77, 0.16); color: #c62a2f; }
+.status-4,
+.status-7 { background: rgba(48, 164, 108, 0.16); color: #1f7a4d; }
+.status-6 { background: rgba(45, 212, 191, 0.18); color: #0f766e; }
+
+:root[data-theme='dark'] .status-2,
+:root[data-theme='dark'] .status-5 { color: #ffa552; }
+:root[data-theme='dark'] .status-3 { color: #ff8b8f; }
+:root[data-theme='dark'] .status-4,
+:root[data-theme='dark'] .status-7 { color: #5fd39b; }
+:root[data-theme='dark'] .status-6 { color: #5eead4; }

@@ -94,6 +94,70 @@
   cursor: default;
 }
 
+.admin-ghost-btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 14px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.admin-ghost-btn.danger {
+  color: #e5484d;
+  border-color: rgba(229, 72, 77, 0.4);
+}
+
+.admin-form-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* "On sale" checkbox sits beside the discount-percent field */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.check input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.field:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Count bubble on the admin Orders tab */
+.tab-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
 /* Item list */
 .admin-list-title {
   font-size: 18px;
@@ -113,8 +177,25 @@
   border-radius: 14px;
   background: var(--surface);
 }
-.admin-row.is-inactive {
-  opacity: 0.55;
+.admin-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-btn.danger:hover {
+  border-color: #e5484d;
 }
 .admin-row-body {
   flex: 1;
