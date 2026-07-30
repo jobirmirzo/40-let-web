@@ -7,6 +7,6 @@ export default defineConfig({
   server: {
     port: 3003,
     strictPort: true,
-    allowedHosts: ['tough-actually-imp.ngrok-free.app', 'e56b-185-139-138-222.ngrok-free.app', '149.102.143.196:3003'],
+    allowedHosts: ['tough-actually-imp.ngrok-free.app', '40let.mazamov.me', '149.102.143.196:5173'],
   },
 })
