@@ -38,6 +38,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
           script: |
             docker network create 40let-network 2>/dev/null || true
             cd /srv/projects/40let/frontend
