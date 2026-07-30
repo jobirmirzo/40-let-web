@@ -190,7 +190,7 @@ function App() {
       {tab === 'menu' && (
         <>
           <header className="app-header">
-            <h1>Order Food</h1>
+            <h1>Order Food V1</h1>
             <p>Pick a category and add items to your basket</p>
           </header>
 
