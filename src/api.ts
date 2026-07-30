@@ -17,8 +17,8 @@ import type {
 // (see vite.config.ts). That keeps the browser same-origin, so no CORS setup is
 // needed on the ASP.NET side. Set VITE_API_BASE to call a deployed API directly.
 // ---------------------------------------------------------------------------
-
-const BASE = import.meta.env.VITE_API_BASE ?? '/api'
+const BASE = import.meta.env.VITE_API_URL;
+// const BASE = import.meta.env.VITE_API_BASE ?? '/api'
 
 export class ApiError extends Error {
   status: number
