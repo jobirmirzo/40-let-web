@@ -8,11 +8,25 @@
   position: relative;
 }
 
-/* Light/dark theme toggle — top-right */
+/* Brand banner — first thing on every screen */
+.brand-banner {
+  margin: 0 0 14px;
+  border-radius: 14px;
+  overflow: hidden;
+  line-height: 0;
+  box-shadow: var(--shadow);
+}
+.brand-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Light/dark theme toggle — sits on the banner, top-right */
 .theme-toggle {
   position: absolute;
-  top: 14px;
-  right: 16px;
+  top: 26px;
+  right: 28px;
   z-index: 12;
   width: 40px;
   height: 40px;
