@@ -247,8 +247,21 @@ export async function fetchRole(): Promise<Role> {
     return 'customer'
   }
 
-  return claims.role?.toLowerCase() === 'admin' ? 'admin' : 'customer'
+  const role = claims.role?.toLowerCase()
+  if (role === 'superadmin') return 'superadmin'
+  if (role === 'admin') return 'admin'
+  return 'customer'
 }
+
+// ---------------------------------------------------------------------------
+// Users  (/users) — superadmin only, for the "Manage admins" Mini App page.
+// ---------------------------------------------------------------------------
+
+export const fetchUsers = () => request<BotUser[]>('/users')
+
+/** Promote a user to admin, or demote an admin back to a plain user. */
+export const updateUserRole = (id: number, role: 'admin' | 'user') =>
+  request<void>(`/users/${id}/role`, { method: 'PATCH', ...json({ role }) })
 
 // ---------------------------------------------------------------------------
 // Foods  (/foods)

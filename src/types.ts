@@ -106,7 +106,7 @@ export interface CheckInput {
 // UI-only types
 // ---------------------------------------------------------------------------
 
-export type Role = 'admin' | 'customer'
+export type Role = 'superadmin' | 'admin' | 'customer'
 
 export interface CartLine {
   food: Food

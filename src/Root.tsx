@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import App from './App'
 import AdminPage from './AdminPage'
+import SuperAdminUsersPage from './SuperAdminUsersPage'
 import { fetchRole } from './api'
 import { useTheme } from './useTheme'
 import type { Role } from './types'
@@ -19,5 +20,11 @@ export default function Root() {
     return <div className="loading">Loading…</div>
   }
 
-  return role === 'admin' ? <AdminPage /> : <App />
+  // The bot's "Adminlarni boshqarish" button opens this exact page (?page=admins).
+  const page = new URLSearchParams(window.location.search).get('page')
+  if (role === 'superadmin' && page === 'admins') {
+    return <SuperAdminUsersPage />
+  }
+
+  return role === 'admin' || role === 'superadmin' ? <AdminPage /> : <App />
 }

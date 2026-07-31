@@ -5,9 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3003,
+    port: 5173,
     strictPort: true,
-    allowedHosts: ['tough-actually-imp.ngrok-free.app', '40let.mazamov.me', '149.102.143.196:5173'],
+    allowedHosts: ['3cba-185-139-138-222.ngrok-free.app', '40let.mazamov.me', '149.102.143.196:5173'],
     proxy: {
       // Local `dotnet run` (see 40-let/Properties/launchSettings.json) — mirrors
       // the /api/ -> backend stripping nginx.conf.template does in production.
