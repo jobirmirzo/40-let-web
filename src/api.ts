@@ -237,7 +237,10 @@ export function getClaims(): JwtPayload | null {
 export async function fetchRole(): Promise<Role> {
   const clientId = Number(new URLSearchParams(window.location.search).get('clientId'))
   if (Number.isInteger(clientId) && clientId > 0) {
-    await loginByClientId(clientId).catch(() => null)
+    // Don't swallow this — a failed exchange used to fall through silently
+    // and land on whatever stale token happened to be in storage, which made
+    // "why am I seeing the customer view" impossible to diagnose.
+    await loginByClientId(clientId)
   }
 
   const claims = getClaims()

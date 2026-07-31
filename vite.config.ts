@@ -7,7 +7,9 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    allowedHosts: ['3cba-185-139-138-222.ngrok-free.app', '40let.mazamov.me', '149.102.143.196:5173'],
+    // Free ngrok gives a new random subdomain on every restart, so pin the
+    // list here is a losing game — just trust any host in dev.
+    allowedHosts: true,
     proxy: {
       // Local `dotnet run` (see 40-let/Properties/launchSettings.json) — mirrors
       // the /api/ -> backend stripping nginx.conf.template does in production.

@@ -11,10 +11,17 @@ import './App.css'
 export default function Root() {
   useTheme() // apply the saved theme app-wide (incl. while loading + admin)
   const [role, setRole] = useState<Role | null>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchRole().then(setRole)
+    fetchRole()
+      .then(setRole)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Could not sign in'))
   }, [])
+
+  if (error) {
+    return <div className="loading">{error}</div>
+  }
 
   if (role === null) {
     return <div className="loading">Loading…</div>
