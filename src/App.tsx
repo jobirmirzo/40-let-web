@@ -19,6 +19,7 @@ import {
   signOut,
 } from './api'
 import { useTheme } from './useTheme'
+import Banner from './Banner'
 import './App.css'
 
 type SubmitState = 'idle' | 'locating' | 'sending' | 'done' | 'error'
@@ -178,6 +179,8 @@ function App() {
 
   return (
     <div className="app">
+      <Banner />
+
       <button
         type="button"
         className="theme-toggle"

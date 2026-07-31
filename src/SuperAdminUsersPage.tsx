@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { BotUser } from './types'
 import { fetchUsers, signOut, updateUserRole } from './api'
 import { useTheme } from './useTheme'
+import Banner from './Banner'
 import './App.css'
 import './Admin.css'
 
@@ -49,6 +50,8 @@ export default function SuperAdminUsersPage() {
 
   return (
     <div className="app admin">
+      <Banner />
+
       <button
         type="button"
         className="theme-toggle"
