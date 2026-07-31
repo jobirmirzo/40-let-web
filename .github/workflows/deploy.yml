@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
 
+# Without this, rapid pushes can run overlapping deploys that finish out of
+# order — an older commit's slower build can land on the server *after* a
+# newer commit's faster one, leaving it stuck on stale code even though every
+# run shows green. Cancelling in-flight runs for the same branch means only
+# the latest push ever actually reaches the server.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
