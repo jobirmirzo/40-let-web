@@ -29,10 +29,22 @@ type Tab = 'menu' | 'orders' | 'profile'
 const isLive = (o: Order) =>
   o.status !== Status.Delivered && o.status !== Status.Canceled
 
+const CART_KEY = 'cart'
+
+/** Survives closing/reloading the Mini App — read once at startup. */
+function loadCart(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(CART_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
 function App() {
   const [activeCategory, setActiveCategory] = useState<Category>(CATEGORIES[0].id)
   const [tab, setTab] = useState<Tab>('menu')
-  const [cart, setCart] = useState<Record<number, number>>({})
+  const [cart, setCart] = useState<Record<number, number>>(loadCart)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [status, setStatus] = useState<SubmitState>('idle')
   const [message, setMessage] = useState('')
@@ -72,6 +84,10 @@ function App() {
     loadFoods()
     loadOrders()
   }, [loadFoods, loadOrders])
+
+  useEffect(() => {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart))
+  }, [cart])
 
   // Keep live order statuses fresh while the customer is watching them.
   useEffect(() => {
