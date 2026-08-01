@@ -25,6 +25,7 @@
 }
 
 .image-picker {
+  position: relative;
   align-self: center;
   width: 120px;
   height: 120px;
@@ -54,6 +55,28 @@
 .image-placeholder svg {
   width: 24px;
   height: 24px;
+}
+
+.image-picker-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+.image-picker-overlay svg {
+  width: 28px;
+  height: 28px;
+  animation: icon-spin-loop 0.8s linear infinite;
+}
+@keyframes icon-spin-loop {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .field {

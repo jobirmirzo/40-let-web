@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Camera,
   ClipboardList,
+  Loader2,
   LogOut,
   Moon,
   Pencil,
@@ -70,6 +71,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
+  const [convertingImage, setConvertingImage] = useState(false)
   const [error, setError] = useState('')
 
   const loadFoods = useCallback(async () => {
@@ -113,13 +115,42 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     [form, saving],
   )
 
-  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+  function isHeic(file: File) {
+    return (
+      /^image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name)
+    )
+  }
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    setImageFile(file)
+    setError('')
+
+    let toUse = file
+    if (isHeic(file)) {
+      setConvertingImage(true)
+      try {
+        const { default: heic2any } = await import('heic2any')
+        const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
+        const blob = Array.isArray(result) ? result[0] : result
+        toUse = new File(
+          [blob],
+          file.name.replace(/\.hei[cf]$/i, '.jpg'),
+          { type: 'image/jpeg' },
+        )
+      } catch {
+        setError('This iPhone photo (HEIC) could not be converted. Try "Most Compatible" format in your camera settings, or export it as JPEG first.')
+        return
+      } finally {
+        setConvertingImage(false)
+      }
+    }
+
+    setImageFile(toUse)
     const reader = new FileReader()
     reader.onload = () => setImagePreview(reader.result as string)
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(toUse)
   }
 
   function resetForm() {
@@ -348,7 +379,18 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
                   Add photo
                 </span>
               )}
-              <input type="file" accept="image/*" onChange={onPickImage} hidden />
+              {convertingImage && (
+                <span className="image-picker-overlay">
+                  <Loader2 className="spin" />
+                </span>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onPickImage}
+                disabled={convertingImage}
+                hidden
+              />
             </label>
 
             <input
