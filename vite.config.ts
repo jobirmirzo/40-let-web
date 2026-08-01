@@ -5,8 +5,19 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3003,
+    port: 5173,
     strictPort: true,
-    allowedHosts: ['tough-actually-imp.ngrok-free.app', '40let.mazamov.me', '149.102.143.196:5173'],
+    // Free ngrok gives a new random subdomain on every restart, so pin the
+    // list here is a losing game — just trust any host in dev.
+    allowedHosts: true,
+    proxy: {
+      // Local `dotnet run` (see 40-let/Properties/launchSettings.json) — mirrors
+      // the /api/ -> backend stripping nginx.conf.template does in production.
+      '/api': {
+        target: 'http://localhost:5218',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 })

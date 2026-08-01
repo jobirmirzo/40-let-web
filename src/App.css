@@ -8,10 +8,24 @@
   position: relative;
 }
 
-/* Circular icon buttons — top-right row, right offset spaces them out */
+/* Brand banner — first thing on every screen */
+.brand-banner {
+  margin: 0 0 14px;
+  border-radius: 14px;
+  overflow: hidden;
+  line-height: 0;
+  box-shadow: var(--shadow);
+}
+.brand-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Circular icon buttons — sit on the banner, top-right row, 48px apart */
 .icon-toggle {
   position: absolute;
-  top: 14px;
+  top: 26px;
   z-index: 12;
   width: 40px;
   height: 40px;
@@ -28,12 +42,12 @@
 }
 
 .theme-toggle {
-  right: 16px;
+  right: 28px;
 }
 
 /* Reload the menu/orders — sits right next to the theme toggle */
 .refresh-toggle {
-  right: 64px;
+  right: 76px;
 }
 .refresh-toggle.is-spinning {
   animation: icon-spin 0.6s linear;
@@ -49,7 +63,7 @@
 
 /* Admin previewing the customer app — jump back to the admin panel */
 .admin-back-toggle {
-  right: 112px;
+  right: 124px;
 }
 
 .app-header h1 {
@@ -460,13 +474,13 @@
 
 /* Sign out — circular, sits left of the refresh button */
 .logout-toggle {
-  right: 112px;
+  right: 124px;
   color: #e5484d;
 }
 
 /* Admin → preview as a simple user — leftmost in the top-right row */
 .user-mode-toggle {
-  right: 160px;
+  right: 172px;
 }
 
 /* Loading / empty / error states */

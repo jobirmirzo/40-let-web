@@ -15,10 +15,11 @@ import type {
 //
 // Requests go to `/api/*`, which the Vite dev server proxies to the backend
 // (see vite.config.ts). That keeps the browser same-origin, so no CORS setup is
-// needed on the ASP.NET side. Set VITE_API_BASE to call a deployed API directly.
+// needed on the ASP.NET side. Set VITE_API_URL (e.g. in .env.local) to call a
+// backend directly instead — handy for pointing dev at something other than
+// localhost:5218 without touching the proxy config.
 // ---------------------------------------------------------------------------
-const BASE = import.meta.env.VITE_API_URL;
-// const BASE = import.meta.env.VITE_API_BASE ?? '/api'
+const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
 export class ApiError extends Error {
   status: number
@@ -38,14 +39,25 @@ function authHeaders(): Record<string, string> {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // A flaky mobile connection inside the Telegram WebView can otherwise hang
+  // fetch() forever, leaving checkout stuck on "Sending your order…".
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+
   let res: Response
   try {
     res = await fetch(`${BASE}${path}`, {
       ...init,
+      signal: controller.signal,
       headers: { ...authHeaders(), ...(init.headers ?? {}) },
     })
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError('The server took too long to respond.', 0)
+    }
     throw new ApiError('Cannot reach the server. Is the API running?', 0)
+  } finally {
+    clearTimeout(timeout)
   }
 
   if (!res.ok) {
@@ -108,28 +120,64 @@ export function getTelegramUser(): TelegramUser | null {
  */
 export function requestLocation(): Promise<Coords> {
   return new Promise((resolve, reject) => {
+    let settled = false
+
+    const finish = (result: { ok: true; coords: Coords } | { ok: false; error: Error }) => {
+      if (settled) return
+      settled = true
+      clearTimeout(hardDeadline)
+      if (result.ok) resolve(result.coords)
+      else reject(result.error)
+    }
+
+    // Absolute ceiling. Whichever path we end up on — Telegram's
+    // LocationManager or the plain browser API — some WebViews never fire
+    // either callback (permission prompt swallowed, etc.), so nothing below
+    // can be trusted to settle on its own. This guarantees checkout is never
+    // stuck on "Getting your location…" for more than 12s.
+    const hardDeadline = setTimeout(
+      () => finish({ ok: false, error: new Error('Location request timed out') }),
+      12000,
+    )
+
     const tg = getTelegram()
 
-    if (tg?.LocationManager) {
-      tg.LocationManager.init(() => {
-        tg.LocationManager!.getLocation((data) => {
-          if (data) resolve({ latitude: data.latitude, longitude: data.longitude })
-          else reject(new Error('Location access was denied'))
-        })
+    const browserGeolocation = () => {
+      if (!('geolocation' in navigator)) {
+        finish({ ok: false, error: new Error('Geolocation is not supported on this device') })
+        return
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          finish({
+            ok: true,
+            coords: { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
+          }),
+        (err) => finish({ ok: false, error: new Error(err.message || 'Could not get location') }),
+        { enableHighAccuracy: true, timeout: 8000 },
+      )
+    }
+
+    if (!tg?.LocationManager) {
+      browserGeolocation()
+      return
+    }
+
+    // Some Telegram clients (desktop, older mobile builds) expose
+    // LocationManager but never actually call its callbacks — give it 4s
+    // before falling back to the plain browser API.
+    const managerTimer = setTimeout(() => {
+      if (!settled) browserGeolocation()
+    }, 4000)
+
+    tg.LocationManager.init(() => {
+      if (settled) return
+      clearTimeout(managerTimer)
+      tg.LocationManager!.getLocation((data) => {
+        if (data) finish({ ok: true, coords: { latitude: data.latitude, longitude: data.longitude } })
+        else finish({ ok: false, error: new Error('Location access was denied') })
       })
-      return
-    }
-
-    if (!('geolocation' in navigator)) {
-      reject(new Error('Geolocation is not supported on this device'))
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-      (err) => reject(new Error(err.message || 'Could not get location')),
-      { enableHighAccuracy: true, timeout: 10000 },
-    )
+    })
   })
 }
 
@@ -254,7 +302,10 @@ export function getClaims(): JwtPayload | null {
 export async function fetchRole(): Promise<Role> {
   const clientId = Number(new URLSearchParams(window.location.search).get('clientId'))
   if (Number.isInteger(clientId) && clientId > 0) {
-    await loginByClientId(clientId).catch(() => null)
+    // Don't swallow this — a failed exchange used to fall through silently
+    // and land on whatever stale token happened to be in storage, which made
+    // "why am I seeing the customer view" impossible to diagnose.
+    await loginByClientId(clientId)
   }
 
   const claims = getClaims()
@@ -264,8 +315,21 @@ export async function fetchRole(): Promise<Role> {
     return 'customer'
   }
 
-  return claims.role?.toLowerCase() === 'admin' ? 'admin' : 'customer'
+  const role = claims.role?.toLowerCase()
+  if (role === 'superadmin') return 'superadmin'
+  if (role === 'admin') return 'admin'
+  return 'customer'
 }
+
+// ---------------------------------------------------------------------------
+// Users  (/users) — superadmin only, for the "Manage admins" Mini App page.
+// ---------------------------------------------------------------------------
+
+export const fetchUsers = () => request<BotUser[]>('/users')
+
+/** Promote a user to admin, or demote an admin back to a plain user. */
+export const updateUserRole = (id: number, role: 'admin' | 'user') =>
+  request<void>(`/users/${id}/role`, { method: 'PATCH', ...json({ role }) })
 
 // ---------------------------------------------------------------------------
 // Foods  (/foods)

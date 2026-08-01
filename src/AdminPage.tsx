@@ -22,6 +22,7 @@ import {
   updateOrderStatus,
 } from './api'
 import { useTheme } from './useTheme'
+import Banner from './Banner'
 import './App.css'
 import './Admin.css'
 
@@ -244,6 +245,8 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
 
   return (
     <div className="app admin">
+      <Banner />
+
       <button
         type="button"
         className="icon-toggle theme-toggle"

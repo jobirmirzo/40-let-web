@@ -19,6 +19,7 @@ import {
   signOut,
 } from './api'
 import { useTheme } from './useTheme'
+import Banner from './Banner'
 import './App.css'
 
 type SubmitState = 'idle' | 'locating' | 'sending' | 'done' | 'error'
@@ -33,10 +34,22 @@ type Props = {
   onExitAdminPreview?: () => void
 }
 
+const CART_KEY = 'cart'
+
+/** Survives closing/reloading the Mini App — read once at startup. */
+function loadCart(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(CART_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
 function App({ onExitAdminPreview }: Props) {
   const [activeCategory, setActiveCategory] = useState<Category>(CATEGORIES[0].id)
   const [tab, setTab] = useState<Tab>('menu')
-  const [cart, setCart] = useState<Record<number, number>>({})
+  const [cart, setCart] = useState<Record<number, number>>(loadCart)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [status, setStatus] = useState<SubmitState>('idle')
   const [message, setMessage] = useState('')
@@ -77,6 +90,10 @@ function App({ onExitAdminPreview }: Props) {
     loadFoods()
     loadOrders()
   }, [loadFoods, loadOrders])
+
+  useEffect(() => {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart))
+  }, [cart])
 
   async function refresh() {
     setRefreshing(true)
@@ -190,6 +207,8 @@ function App({ onExitAdminPreview }: Props) {
 
   return (
     <div className="app">
+      <Banner />
+
       <button
         type="button"
         className="icon-toggle theme-toggle"
