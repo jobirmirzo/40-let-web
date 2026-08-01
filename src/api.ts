@@ -218,22 +218,6 @@ export function logout(): void {
 
 export const isLoggedIn = () => token !== null
 
-/** The raw token in use right now, so it can be stashed and restored later. */
-export const getToken = () => token
-
-/**
- * Swap the active token without a full sign-out/reload.
- *
- * Used to preview the customer app as an admin: the admin's token is stashed,
- * requests go out with no (or a different) token while previewing, and the
- * stashed token is put back when they return to the admin panel.
- */
-export function setToken(next: string | null): void {
-  token = next
-  if (next) localStorage.setItem('token', next)
-  else localStorage.removeItem('token')
-}
-
 /**
  * Clear the session and reload on a clean URL.
  *

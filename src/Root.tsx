@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import App from './App'
 import AdminPage from './AdminPage'
 import SuperAdminUsersPage from './SuperAdminUsersPage'
-import { fetchRole, getToken, setToken } from './api'
+import { fetchRole } from './api'
 import { useTheme } from './useTheme'
 import type { Role } from './types'
 import './App.css'
@@ -13,9 +13,6 @@ export default function Root() {
   const [role, setRole] = useState<Role | null>(null)
   const [error, setError] = useState('')
   const [previewAsUser, setPreviewAsUser] = useState(false)
-  // The admin's token, stashed while previewing so requests stop going out
-  // with admin auth — restored when they switch back.
-  const stashedAdminToken = useRef<string | null>(null)
 
   useEffect(() => {
     fetchRole()
@@ -31,20 +28,11 @@ export default function Root() {
     return <div className="loading">Loading…</div>
   }
 
-  function enterPreview() {
-    stashedAdminToken.current = getToken()
-    setToken(null)
-    setPreviewAsUser(true)
-  }
-
-  function exitPreview() {
-    setToken(stashedAdminToken.current)
-    stashedAdminToken.current = null
-    setPreviewAsUser(false)
-  }
-
+  // Just swaps which UI renders — the admin's token stays active, since
+  // /foods, /orders etc. require *some* authenticated user regardless of
+  // role, and there's no separate "customer" identity to switch to.
   if ((role === 'admin' || role === 'superadmin') && previewAsUser) {
-    return <App onExitAdminPreview={exitPreview} />
+    return <App onExitAdminPreview={() => setPreviewAsUser(false)} />
   }
 
   // The bot's "Adminlarni boshqarish" button opens this exact page (?page=admins).
@@ -54,7 +42,7 @@ export default function Root() {
   }
 
   return role === 'admin' || role === 'superadmin' ? (
-    <AdminPage onPreviewAsUser={enterPreview} />
+    <AdminPage onPreviewAsUser={() => setPreviewAsUser(true)} />
   ) : (
     <App />
   )
