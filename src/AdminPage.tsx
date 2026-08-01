@@ -36,7 +36,12 @@ const blankForm = {
   hasDiscount: false,
 }
 
-export default function AdminPage() {
+type Props = {
+  /** Lets the admin preview the app as a regular, signed-out-of-admin customer. */
+  onPreviewAsUser?: () => void
+}
+
+export default function AdminPage({ onPreviewAsUser }: Props) {
   const [theme, toggleTheme] = useTheme()
   const [tab, setTab] = useState<AdminTab>('menu')
 
@@ -44,6 +49,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loadError, setLoadError] = useState('')
   const [orderError, setOrderError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
 
   // Form state. `editing` is the id being updated, or null when creating.
   const [editing, setEditing] = useState<number | null>(null)
@@ -75,6 +81,12 @@ export default function AdminPage() {
     loadFoods()
     loadOrders()
   }, [loadFoods, loadOrders])
+
+  async function refresh() {
+    setRefreshing(true)
+    await Promise.all([loadFoods(), loadOrders()])
+    setRefreshing(false)
+  }
 
   // Poll the kitchen board so a second admin's changes show up.
   useEffect(() => {
@@ -234,7 +246,7 @@ export default function AdminPage() {
     <div className="app admin">
       <button
         type="button"
-        className="theme-toggle"
+        className="icon-toggle theme-toggle"
         onClick={toggleTheme}
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
@@ -243,13 +255,36 @@ export default function AdminPage() {
 
       <button
         type="button"
-        className="logout-toggle"
+        className={`icon-toggle refresh-toggle ${refreshing ? 'is-spinning' : ''}`}
+        onClick={refresh}
+        disabled={refreshing}
+        aria-label="Refresh"
+        title="Refresh"
+      >
+        🔄
+      </button>
+
+      <button
+        type="button"
+        className="icon-toggle logout-toggle"
         onClick={signOut}
         aria-label="Sign out"
         title="Sign out"
       >
         ⎋
       </button>
+
+      {onPreviewAsUser && (
+        <button
+          type="button"
+          className="icon-toggle user-mode-toggle"
+          onClick={onPreviewAsUser}
+          aria-label="Switch to simple user mode"
+          title="Switch to simple user mode"
+        >
+          👤
+        </button>
+      )}
 
       <header className="app-header">
         <h1>{tab === 'menu' ? 'Menu Admin' : 'Kitchen'}</h1>

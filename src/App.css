@@ -8,11 +8,10 @@
   position: relative;
 }
 
-/* Light/dark theme toggle — top-right */
-.theme-toggle {
+/* Circular icon buttons — top-right row, right offset spaces them out */
+.icon-toggle {
   position: absolute;
   top: 14px;
-  right: 16px;
   z-index: 12;
   width: 40px;
   height: 40px;
@@ -26,6 +25,31 @@
   color: var(--text-h);
   cursor: pointer;
   box-shadow: var(--shadow);
+}
+
+.theme-toggle {
+  right: 16px;
+}
+
+/* Reload the menu/orders — sits right next to the theme toggle */
+.refresh-toggle {
+  right: 64px;
+}
+.refresh-toggle.is-spinning {
+  animation: icon-spin 0.6s linear;
+}
+@keyframes icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Admin previewing the customer app — jump back to the admin panel */
+.admin-back-toggle {
+  right: 112px;
 }
 
 .app-header h1 {
@@ -434,24 +458,15 @@
   cursor: pointer;
 }
 
-/* Sign out — circular, sits to the left of the theme toggle */
+/* Sign out — circular, sits left of the refresh button */
 .logout-toggle {
-  position: absolute;
-  top: 14px;
-  right: 64px;
-  z-index: 12;
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-  line-height: 1;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--surface);
+  right: 112px;
   color: #e5484d;
-  cursor: pointer;
-  box-shadow: var(--shadow);
+}
+
+/* Admin → preview as a simple user — leftmost in the top-right row */
+.user-mode-toggle {
+  right: 160px;
 }
 
 /* Loading / empty / error states */

@@ -28,7 +28,12 @@ type Tab = 'menu' | 'orders' | 'profile'
 const isLive = (o: Order) =>
   o.status !== Status.Delivered && o.status !== Status.Canceled
 
-function App() {
+type Props = {
+  /** Set when an admin is previewing the customer app — lets them jump back. */
+  onExitAdminPreview?: () => void
+}
+
+function App({ onExitAdminPreview }: Props) {
   const [activeCategory, setActiveCategory] = useState<Category>(CATEGORIES[0].id)
   const [tab, setTab] = useState<Tab>('menu')
   const [cart, setCart] = useState<Record<number, number>>({})
@@ -39,6 +44,7 @@ function App() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
   const [theme, toggleTheme] = useTheme()
 
   const user = useMemo(() => getTelegramUser(), [])
@@ -71,6 +77,12 @@ function App() {
     loadFoods()
     loadOrders()
   }, [loadFoods, loadOrders])
+
+  async function refresh() {
+    setRefreshing(true)
+    await Promise.all([loadFoods(), loadOrders()])
+    setRefreshing(false)
+  }
 
   // Keep live order statuses fresh while the customer is watching them.
   useEffect(() => {
@@ -180,12 +192,35 @@ function App() {
     <div className="app">
       <button
         type="button"
-        className="theme-toggle"
+        className="icon-toggle theme-toggle"
         onClick={toggleTheme}
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {theme === 'dark' ? '☀️' : '🌙'}
       </button>
+
+      <button
+        type="button"
+        className={`icon-toggle refresh-toggle ${refreshing ? 'is-spinning' : ''}`}
+        onClick={refresh}
+        disabled={refreshing}
+        aria-label="Refresh"
+        title="Refresh"
+      >
+        🔄
+      </button>
+
+      {onExitAdminPreview && (
+        <button
+          type="button"
+          className="icon-toggle admin-back-toggle"
+          onClick={onExitAdminPreview}
+          aria-label="Back to admin panel"
+          title="Back to admin panel"
+        >
+          🛠️
+        </button>
+      )}
 
       {tab === 'menu' && (
         <>

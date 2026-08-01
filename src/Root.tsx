@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import App from './App'
 import AdminPage from './AdminPage'
-import { fetchRole } from './api'
+import { fetchRole, getToken, setToken } from './api'
 import { useTheme } from './useTheme'
 import type { Role } from './types'
 import './App.css'
@@ -10,6 +10,10 @@ import './App.css'
 export default function Root() {
   useTheme() // apply the saved theme app-wide (incl. while loading + admin)
   const [role, setRole] = useState<Role | null>(null)
+  const [previewAsUser, setPreviewAsUser] = useState(false)
+  // The admin's token, stashed while previewing so requests stop going out
+  // with admin auth — restored when they switch back.
+  const stashedAdminToken = useRef<string | null>(null)
 
   useEffect(() => {
     fetchRole().then(setRole)
@@ -19,5 +23,25 @@ export default function Root() {
     return <div className="loading">Loading…</div>
   }
 
-  return role === 'admin' ? <AdminPage /> : <App />
+  function enterPreview() {
+    stashedAdminToken.current = getToken()
+    setToken(null)
+    setPreviewAsUser(true)
+  }
+
+  function exitPreview() {
+    setToken(stashedAdminToken.current)
+    stashedAdminToken.current = null
+    setPreviewAsUser(false)
+  }
+
+  if (role === 'admin' && previewAsUser) {
+    return <App onExitAdminPreview={exitPreview} />
+  }
+
+  return role === 'admin' ? (
+    <AdminPage onPreviewAsUser={enterPreview} />
+  ) : (
+    <App />
+  )
 }
