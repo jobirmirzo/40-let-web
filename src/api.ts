@@ -118,44 +118,62 @@ export function getTelegramUser(): TelegramUser | null {
  */
 export function requestLocation(): Promise<Coords> {
   return new Promise((resolve, reject) => {
+    let settled = false
+
+    const finish = (result: { ok: true; coords: Coords } | { ok: false; error: Error }) => {
+      if (settled) return
+      settled = true
+      clearTimeout(hardDeadline)
+      if (result.ok) resolve(result.coords)
+      else reject(result.error)
+    }
+
+    // Absolute ceiling. Whichever path we end up on — Telegram's
+    // LocationManager or the plain browser API — some WebViews never fire
+    // either callback (permission prompt swallowed, etc.), so nothing below
+    // can be trusted to settle on its own. This guarantees checkout is never
+    // stuck on "Getting your location…" for more than 12s.
+    const hardDeadline = setTimeout(
+      () => finish({ ok: false, error: new Error('Location request timed out') }),
+      12000,
+    )
+
     const tg = getTelegram()
 
-    const fallbackToBrowserGeolocation = () => {
+    const browserGeolocation = () => {
       if (!('geolocation' in navigator)) {
-        reject(new Error('Geolocation is not supported on this device'))
+        finish({ ok: false, error: new Error('Geolocation is not supported on this device') })
         return
       }
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        (err) => reject(new Error(err.message || 'Could not get location')),
-        { enableHighAccuracy: true, timeout: 10000 },
+        (pos) =>
+          finish({
+            ok: true,
+            coords: { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
+          }),
+        (err) => finish({ ok: false, error: new Error(err.message || 'Could not get location') }),
+        { enableHighAccuracy: true, timeout: 8000 },
       )
     }
 
     if (!tg?.LocationManager) {
-      fallbackToBrowserGeolocation()
+      browserGeolocation()
       return
     }
 
     // Some Telegram clients (desktop, older mobile builds) expose
-    // LocationManager but never actually call its callbacks — without a
-    // timeout, checkout hangs forever on "Getting your location…". Fall back
-    // to the plain browser API if Telegram hasn't responded in time.
-    let settled = false
-    const fallbackTimer = setTimeout(() => {
-      if (settled) return
-      settled = true
-      fallbackToBrowserGeolocation()
+    // LocationManager but never actually call its callbacks — give it 4s
+    // before falling back to the plain browser API.
+    const managerTimer = setTimeout(() => {
+      if (!settled) browserGeolocation()
     }, 4000)
 
     tg.LocationManager.init(() => {
       if (settled) return
+      clearTimeout(managerTimer)
       tg.LocationManager!.getLocation((data) => {
-        if (settled) return
-        clearTimeout(fallbackTimer)
-        settled = true
-        if (data) resolve({ latitude: data.latitude, longitude: data.longitude })
-        else reject(new Error('Location access was denied'))
+        if (data) finish({ ok: true, coords: { latitude: data.latitude, longitude: data.longitude } })
+        else finish({ ok: false, error: new Error('Location access was denied') })
       })
     })
   })
