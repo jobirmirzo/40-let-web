@@ -3,6 +3,7 @@ import { LogOut, Moon, Sun } from 'lucide-react'
 import type { BotUser } from './types'
 import { fetchUsers, signOut, updateUserRole } from './api'
 import { useTheme } from './useTheme'
+import { useToast } from './Toast'
 import Banner from './Banner'
 import './App.css'
 import './Admin.css'
@@ -15,6 +16,7 @@ import './Admin.css'
  * from the SuperAdmin:ChatIds config, not this UI.
  */
 export default function SuperAdminUsersPage() {
+  const toast = useToast()
   const [theme, toggleTheme] = useTheme()
   const [users, setUsers] = useState<BotUser[]>([])
   const [loadError, setLoadError] = useState('')
@@ -43,7 +45,7 @@ export default function SuperAdminUsersPage() {
       await updateUserRole(user.id, nextRole)
     } catch (err) {
       setUsers(before)
-      setLoadError(err instanceof Error ? err.message : 'Could not update the role')
+      toast.error(err instanceof Error ? err.message : 'Could not update the role')
     } finally {
       setBusyId(null)
     }

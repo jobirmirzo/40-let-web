@@ -35,6 +35,7 @@ import {
   updateOrderStatus,
 } from './api'
 import { useTheme } from './useTheme'
+import { useToast } from './Toast'
 import Banner from './Banner'
 import './App.css'
 import './Admin.css'
@@ -56,13 +57,13 @@ type Props = {
 }
 
 export default function AdminPage({ onPreviewAsUser }: Props) {
+  const toast = useToast()
   const [theme, toggleTheme] = useTheme()
   const [tab, setTab] = useState<AdminTab>('menu')
 
   const [foods, setFoods] = useState<Food[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [loadError, setLoadError] = useState('')
-  const [orderError, setOrderError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
 
   // Form state. `editing` is the id being updated, or null when creating.
@@ -72,7 +73,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [convertingImage, setConvertingImage] = useState(false)
-  const [error, setError] = useState('')
 
   const loadFoods = useCallback(async () => {
     try {
@@ -125,7 +125,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    setError('')
 
     let toUse = file
     if (isHeic(file)) {
@@ -140,7 +139,9 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
           { type: 'image/jpeg' },
         )
       } catch {
-        setError('This iPhone photo (HEIC) could not be converted. Try "Most Compatible" format in your camera settings, or export it as JPEG first.')
+        toast.error(
+          'This iPhone photo (HEIC) could not be converted. Try "Most Compatible" format in your camera settings, or export it as JPEG first.',
+        )
         return
       } finally {
         setConvertingImage(false)
@@ -158,7 +159,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     setForm(blankForm)
     setImageFile(null)
     setImagePreview(undefined)
-    setError('')
   }
 
   function startEdit(food: Food) {
@@ -172,7 +172,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     })
     setImageFile(null)
     setImagePreview(food.image ?? undefined)
-    setError('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -180,7 +179,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     e.preventDefault()
     if (!canSubmit) return
     setSaving(true)
-    setError('')
 
     const payload = {
       name: form.name.trim(),
@@ -199,7 +197,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
       await loadFoods()
       resetForm()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save the item')
+      toast.error(err instanceof Error ? err.message : 'Could not save the item')
     } finally {
       setSaving(false)
     }
@@ -214,7 +212,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
       if (editing === food.id) resetForm()
     } catch (err) {
       setFoods(before)
-      setError(err instanceof Error ? err.message : 'Could not delete the item')
+      toast.error(err instanceof Error ? err.message : 'Could not delete the item')
     }
   }
 
@@ -269,14 +267,13 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     if (!confirm(`Delete order #${order.id}? This cannot be undone.`)) return
     const before = orders
     setOrders((list) => list.filter((o) => o.id !== order.id))
-    setOrderError('')
     try {
       await deleteOrder(order.id)
     } catch {
       setOrders(before)
       // checks.order_id is ON DELETE RESTRICT, so any order with a receipt
       // can't be removed. Say so rather than silently snapping back.
-      setOrderError(
+      toast.error(
         `Order #${order.id} can't be deleted — it has a receipt attached. Cancel it instead.`,
       )
     }
@@ -448,8 +445,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
               />
             </div>
 
-            {error && <p className="admin-error">{error}</p>}
-
             <div className="field-row">
               <button type="submit" className="admin-add-btn" disabled={!canSubmit}>
                 {saving ? 'Saving…' : editing === null ? 'Add item' : 'Save changes'}
@@ -536,7 +531,6 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
 
       {tab === 'orders' && (
         <div className="orders">
-          {orderError && <p className="admin-error">{orderError}</p>}
           {orders.length === 0 && <p className="state-msg">No orders yet.</p>}
 
           {orders.map((order) => {

@@ -29,10 +29,11 @@ import {
   signOut,
 } from './api'
 import { useTheme } from './useTheme'
+import { useToast } from './Toast'
 import Banner from './Banner'
 import './App.css'
 
-type SubmitState = 'idle' | 'locating' | 'sending' | 'done' | 'error'
+type SubmitState = 'idle' | 'locating' | 'sending' | 'done'
 type Tab = 'menu' | 'orders' | 'profile'
 
 /** Orders that are still moving; anything else is history. */
@@ -57,6 +58,7 @@ function loadCart(): Record<number, number> {
 }
 
 function App({ onExitAdminPreview }: Props) {
+  const toast = useToast()
   const [activeCategory, setActiveCategory] = useState<Category>(CATEGORIES[0].id)
   const [tab, setTab] = useState<Tab>('menu')
   const [cart, setCart] = useState<Record<number, number>>(loadCart)
@@ -207,8 +209,9 @@ function App({ onExitAdminPreview }: Props) {
         setTab('orders')
       }, 1600)
     } catch (err) {
-      setStatus('error')
-      setMessage(err instanceof Error ? err.message : 'Something went wrong')
+      setStatus('idle')
+      setMessage('')
+      toast.error(err instanceof Error ? err.message : 'Something went wrong')
     }
   }
 

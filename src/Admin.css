@@ -103,12 +103,6 @@
   min-width: 0;
 }
 
-.admin-error {
-  color: #e5484d;
-  font-size: 13px;
-  margin: 0;
-}
-
 .admin-add-btn {
   width: 100%;
   display: inline-flex;
