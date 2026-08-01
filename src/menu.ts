@@ -1,18 +1,30 @@
+import {
+  Bike,
+  CheckCircle2,
+  ChefHat,
+  CircleDollarSign,
+  CupSoda,
+  PartyPopper,
+  Receipt,
+  UtensilsCrossed,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
 import { Category, Status } from './types'
 import type { Food } from './types'
 
 // The API's Category enum only has Food and Drink — there is no Dessert.
-export const CATEGORIES: { id: Category; label: string; emoji: string }[] = [
-  { id: Category.Food, label: 'Food', emoji: '🍔' },
-  { id: Category.Drink, label: 'Drinks', emoji: '🥤' },
+export const CATEGORIES: { id: Category; label: string; icon: LucideIcon }[] = [
+  { id: Category.Food, label: 'Food', icon: UtensilsCrossed },
+  { id: Category.Drink, label: 'Drinks', icon: CupSoda },
 ]
 
 export const categoryLabel = (c: Category) =>
   CATEGORIES.find((x) => x.id === c)?.label ?? 'Other'
 
 /** Stand-in art for items whose image failed to load or was never uploaded. */
-export const categoryEmoji = (c: Category) =>
-  CATEGORIES.find((x) => x.id === c)?.emoji ?? '🍽️'
+export const categoryIcon = (c: Category): LucideIcon =>
+  CATEGORIES.find((x) => x.id === c)?.icon ?? UtensilsCrossed
 
 export const STATUS_LABELS: Record<Status, string> = {
   [Status.InProgress]: 'Placed',
@@ -24,14 +36,14 @@ export const STATUS_LABELS: Record<Status, string> = {
   [Status.Delivered]: 'Delivered',
 }
 
-export const STATUS_EMOJI: Record<Status, string> = {
-  [Status.InProgress]: '🧾',
-  [Status.InPayment]: '💳',
-  [Status.Canceled]: '✖️',
-  [Status.PaymentDone]: '✅',
-  [Status.Cooking]: '👨‍🍳',
-  [Status.InDelivery]: '🛵',
-  [Status.Delivered]: '🎉',
+export const STATUS_ICON: Record<Status, LucideIcon> = {
+  [Status.InProgress]: Receipt,
+  [Status.InPayment]: CircleDollarSign,
+  [Status.Canceled]: XCircle,
+  [Status.PaymentDone]: CheckCircle2,
+  [Status.Cooking]: ChefHat,
+  [Status.InDelivery]: Bike,
+  [Status.Delivered]: PartyPopper,
 }
 
 /** The order a kitchen actually moves through, for the admin's next-step button. */

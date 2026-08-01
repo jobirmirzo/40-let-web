@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  Camera,
+  ClipboardList,
+  LogOut,
+  Moon,
+  Pencil,
+  RefreshCw,
+  Sun,
+  Trash2,
+  UserRound,
+  UtensilsCrossed,
+} from 'lucide-react'
+import {
   CATEGORIES,
-  STATUS_EMOJI,
+  STATUS_ICON,
   STATUS_LABELS,
-  categoryEmoji,
+  categoryIcon,
   categoryLabel,
   effectivePrice,
   formatPrice,
@@ -247,47 +259,49 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
     <div className="app admin">
       <Banner />
 
-      <button
-        type="button"
-        className="icon-toggle theme-toggle"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? '☀️' : '🌙'}
-      </button>
+      <div className="icon-row">
+        {onPreviewAsUser && (
+          <button
+            type="button"
+            className="icon-toggle user-mode-toggle"
+            onClick={onPreviewAsUser}
+            aria-label="Switch to simple user mode"
+            title="Switch to simple user mode"
+          >
+            <UserRound />
+          </button>
+        )}
 
-      <button
-        type="button"
-        className={`icon-toggle refresh-toggle ${refreshing ? 'is-spinning' : ''}`}
-        onClick={refresh}
-        disabled={refreshing}
-        aria-label="Refresh"
-        title="Refresh"
-      >
-        🔄
-      </button>
-
-      <button
-        type="button"
-        className="icon-toggle logout-toggle"
-        onClick={signOut}
-        aria-label="Sign out"
-        title="Sign out"
-      >
-        ⎋
-      </button>
-
-      {onPreviewAsUser && (
         <button
           type="button"
-          className="icon-toggle user-mode-toggle"
-          onClick={onPreviewAsUser}
-          aria-label="Switch to simple user mode"
-          title="Switch to simple user mode"
+          className="icon-toggle logout-toggle"
+          onClick={signOut}
+          aria-label="Sign out"
+          title="Sign out"
         >
-          👤
+          <LogOut />
         </button>
-      )}
+
+        <button
+          type="button"
+          className={`icon-toggle refresh-toggle ${refreshing ? 'is-spinning' : ''}`}
+          onClick={refresh}
+          disabled={refreshing}
+          aria-label="Refresh"
+          title="Refresh"
+        >
+          <RefreshCw />
+        </button>
+
+        <button
+          type="button"
+          className="icon-toggle theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun /> : <Moon />}
+        </button>
+      </div>
 
       <header className="app-header">
         <h1>{tab === 'menu' ? 'Menu Admin' : 'Kitchen'}</h1>
@@ -304,7 +318,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
           className={`tab ${tab === 'menu' ? 'is-active' : ''}`}
           onClick={() => setTab('menu')}
         >
-          <span className="tab-emoji">🍽️</span>
+          <UtensilsCrossed className="tab-icon" />
           Menu
         </button>
         <button
@@ -312,7 +326,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
           className={`tab ${tab === 'orders' ? 'is-active' : ''}`}
           onClick={() => setTab('orders')}
         >
-          <span className="tab-emoji">📋</span>
+          <ClipboardList className="tab-icon" />
           Orders
           {openOrders.length > 0 && <span className="tab-count">{openOrders.length}</span>}
         </button>
@@ -330,8 +344,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
                 <img className="image-preview" src={imagePreview} alt="" />
               ) : (
                 <span className="image-placeholder">
-                  📷
-                  <br />
+                  <Camera />
                   Add photo
                 </span>
               )}
@@ -419,7 +432,9 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
           )}
 
           <div className="admin-list">
-            {foods.map((food) => (
+            {foods.map((food) => {
+              const CategoryIcon = categoryIcon(food.category)
+              return (
               <div
                 key={food.id}
                 className={`admin-row ${food.hasDiscount ? '' : 'is-plain'}`}
@@ -427,7 +442,9 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
                 {food.image ? (
                   <img className="card-img" src={food.image} alt="" />
                 ) : (
-                  <div className="card-emoji">{categoryEmoji(food.category)}</div>
+                  <div className="card-icon">
+                    <CategoryIcon />
+                  </div>
                 )}
                 <div className="admin-row-body">
                   <div className="card-name">{food.name ?? 'Unnamed item'}</div>
@@ -457,7 +474,7 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
                     aria-label="Edit"
                     onClick={() => startEdit(food)}
                   >
-                    ✏️
+                    <Pencil />
                   </button>
                   <button
                     type="button"
@@ -465,11 +482,12 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
                     aria-label="Delete"
                     onClick={() => onDelete(food)}
                   >
-                    🗑️
+                    <Trash2 />
                   </button>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </>
       )}
@@ -483,13 +501,15 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
             const next = nextStatus(order.status)
             const closed =
               order.status === Status.Delivered || order.status === Status.Canceled
+            const StatusIcon = STATUS_ICON[order.status]
+            const NextIcon = next ? STATUS_ICON[next] : null
 
             return (
               <article key={order.id} className={`order-card ${closed ? 'is-closed' : ''}`}>
                 <div className="order-head">
                   <span className="order-id">Order #{order.id}</span>
                   <span className={`status-pill status-${order.status}`}>
-                    {STATUS_EMOJI[order.status]} {STATUS_LABELS[order.status]}
+                    <StatusIcon /> {STATUS_LABELS[order.status]}
                   </span>
                 </div>
 
@@ -513,13 +533,13 @@ export default function AdminPage({ onPreviewAsUser }: Props) {
                 </div>
 
                 <div className="order-actions">
-                  {next && (
+                  {next && NextIcon && (
                     <button
                       type="button"
                       className="admin-add-btn"
                       onClick={() => onAdvance(order)}
                     >
-                      {STATUS_EMOJI[next]} Mark {STATUS_LABELS[next].toLowerCase()}
+                      <NextIcon size={16} /> Mark {STATUS_LABELS[next].toLowerCase()}
                     </button>
                   )}
                   {!closed && (

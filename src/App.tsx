@@ -1,9 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  ClipboardList,
+  LayoutDashboard,
+  Moon,
+  RefreshCw,
+  ShoppingCart,
+  Sun,
+  UserRound,
+  UtensilsCrossed,
+} from 'lucide-react'
+import {
   CATEGORIES,
-  STATUS_EMOJI,
+  STATUS_ICON,
   STATUS_LABELS,
-  categoryEmoji,
+  categoryIcon,
   effectivePrice,
   formatPrice,
 } from './menu'
@@ -209,37 +219,39 @@ function App({ onExitAdminPreview }: Props) {
     <div className="app">
       <Banner />
 
-      <button
-        type="button"
-        className="icon-toggle theme-toggle"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? '☀️' : '🌙'}
-      </button>
+      <div className="icon-row">
+        {onExitAdminPreview && (
+          <button
+            type="button"
+            className="icon-toggle admin-back-toggle"
+            onClick={onExitAdminPreview}
+            aria-label="Back to admin panel"
+            title="Back to admin panel"
+          >
+            <LayoutDashboard />
+          </button>
+        )}
 
-      <button
-        type="button"
-        className={`icon-toggle refresh-toggle ${refreshing ? 'is-spinning' : ''}`}
-        onClick={refresh}
-        disabled={refreshing}
-        aria-label="Refresh"
-        title="Refresh"
-      >
-        🔄
-      </button>
-
-      {onExitAdminPreview && (
         <button
           type="button"
-          className="icon-toggle admin-back-toggle"
-          onClick={onExitAdminPreview}
-          aria-label="Back to admin panel"
-          title="Back to admin panel"
+          className={`icon-toggle refresh-toggle ${refreshing ? 'is-spinning' : ''}`}
+          onClick={refresh}
+          disabled={refreshing}
+          aria-label="Refresh"
+          title="Refresh"
         >
-          🛠️
+          <RefreshCw />
         </button>
-      )}
+
+        <button
+          type="button"
+          className="icon-toggle theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun /> : <Moon />}
+        </button>
+      </div>
 
       {tab === 'menu' && (
         <>
@@ -256,7 +268,7 @@ function App({ onExitAdminPreview }: Props) {
                 className={`tab ${activeCategory === c.id ? 'is-active' : ''}`}
                 onClick={() => setActiveCategory(c.id)}
               >
-                <span className="tab-emoji">{c.emoji}</span>
+                <c.icon className="tab-icon" />
                 {c.label}
               </button>
             ))}
@@ -282,13 +294,16 @@ function App({ onExitAdminPreview }: Props) {
               const qty = cart[food.id] ?? 0
               const price = effectivePrice(food)
               const discounted = price < food.price
+              const CategoryIcon = categoryIcon(food.category)
 
               return (
                 <div key={food.id} className="card">
                   {food.image ? (
                     <img className="card-img" src={food.image} alt="" />
                   ) : (
-                    <div className="card-emoji">{categoryEmoji(food.category)}</div>
+                    <div className="card-icon">
+                      <CategoryIcon />
+                    </div>
                   )}
                   <div className="card-body">
                     <div className="card-name">{food.name ?? 'Unnamed item'}</div>
@@ -336,12 +351,14 @@ function App({ onExitAdminPreview }: Props) {
             <p className="state-msg">No orders yet. Your basket is waiting 🍔</p>
           ) : (
             <div className="orders">
-              {orders.map((order) => (
+              {orders.map((order) => {
+                const StatusIcon = STATUS_ICON[order.status]
+                return (
                 <article key={order.id} className="order-card">
                   <div className="order-head">
                     <span className="order-id">Order #{order.id}</span>
                     <span className={`status-pill status-${order.status}`}>
-                      {STATUS_EMOJI[order.status]} {STATUS_LABELS[order.status]}
+                      <StatusIcon /> {STATUS_LABELS[order.status]}
                     </span>
                   </div>
 
@@ -364,7 +381,8 @@ function App({ onExitAdminPreview }: Props) {
                     <strong>{formatPrice(order.totalPrice)}</strong>
                   </div>
                 </article>
-              ))}
+                )
+              })}
             </div>
           )}
         </section>
@@ -378,9 +396,13 @@ function App({ onExitAdminPreview }: Props) {
           <div className="profile-card">
             {user?.photo_url ? (
               <img className="profile-avatar" src={user.photo_url} alt="" />
+            ) : user?.first_name ? (
+              <div className="profile-avatar profile-avatar--fallback">
+                {user.first_name.charAt(0)}
+              </div>
             ) : (
               <div className="profile-avatar profile-avatar--fallback">
-                {(user?.first_name ?? '👤').charAt(0)}
+                <UserRound />
               </div>
             )}
             <div className="profile-name">
@@ -424,12 +446,14 @@ function App({ onExitAdminPreview }: Props) {
           className={`nav-btn ${tab === 'menu' ? 'is-active' : ''}`}
           onClick={() => setTab('menu')}
         >
-          <span className="nav-icon">🍽️</span>
+          <span className="nav-icon">
+            <UtensilsCrossed />
+          </span>
           <span className="nav-label">Menu</span>
         </button>
         <button type="button" className="nav-btn" onClick={() => setSheetOpen(true)}>
           <span className="nav-icon">
-            🛒
+            <ShoppingCart />
             {count > 0 && <span className="nav-badge">{count}</span>}
           </span>
           <span className="nav-label">Basket</span>
@@ -440,7 +464,7 @@ function App({ onExitAdminPreview }: Props) {
           onClick={() => setTab('orders')}
         >
           <span className="nav-icon">
-            📋
+            <ClipboardList />
             {liveOrders.length > 0 && <span className="nav-badge">{liveOrders.length}</span>}
           </span>
           <span className="nav-label">Orders</span>
@@ -450,7 +474,9 @@ function App({ onExitAdminPreview }: Props) {
           className={`nav-btn ${tab === 'profile' ? 'is-active' : ''}`}
           onClick={() => setTab('profile')}
         >
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <UserRound />
+          </span>
           <span className="nav-label">Profile</span>
         </button>
       </nav>
@@ -467,9 +493,13 @@ function App({ onExitAdminPreview }: Props) {
             ) : (
               <>
                 <div className="sheet-lines">
-                  {lines.map((l) => (
+                  {lines.map((l) => {
+                    const LineIcon = categoryIcon(l.food.category)
+                    return (
                     <div key={l.food.id} className="sheet-line">
-                      <span className="sheet-line-emoji">{categoryEmoji(l.food.category)}</span>
+                      <span className="sheet-line-icon">
+                        <LineIcon size={20} />
+                      </span>
                       <span className="sheet-line-name">{l.food.name ?? 'Unnamed item'}</span>
                       <div className="stepper small">
                         <button type="button" onClick={() => remove(l.food)} aria-label="Remove one">
@@ -484,7 +514,8 @@ function App({ onExitAdminPreview }: Props) {
                         {formatPrice(effectivePrice(l.food) * l.qty)}
                       </span>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 {saved > 0.005 && (

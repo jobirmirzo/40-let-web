@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { LogOut, Moon, Sun } from 'lucide-react'
 import type { BotUser } from './types'
 import { fetchUsers, signOut, updateUserRole } from './api'
 import { useTheme } from './useTheme'
@@ -52,24 +53,26 @@ export default function SuperAdminUsersPage() {
     <div className="app admin">
       <Banner />
 
-      <button
-        type="button"
-        className="theme-toggle"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? '☀️' : '🌙'}
-      </button>
+      <div className="icon-row">
+        <button
+          type="button"
+          className="icon-toggle logout-toggle"
+          onClick={signOut}
+          aria-label="Sign out"
+          title="Sign out"
+        >
+          <LogOut />
+        </button>
 
-      <button
-        type="button"
-        className="logout-toggle"
-        onClick={signOut}
-        aria-label="Sign out"
-        title="Sign out"
-      >
-        ⎋
-      </button>
+        <button
+          type="button"
+          className="icon-toggle theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun /> : <Moon />}
+        </button>
+      </div>
 
       <header className="app-header">
         <h1>Adminlarni boshqarish</h1>
